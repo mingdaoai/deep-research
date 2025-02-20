@@ -1,0 +1,1 @@
+in composer, we are already in researchSync directory, so don't cd to it again when executing command

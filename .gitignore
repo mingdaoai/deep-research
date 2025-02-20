@@ -1,0 +1,4 @@
+topic*
+chrome-data
+*.log
+__pycache__
