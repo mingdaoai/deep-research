@@ -1,4 +1,4 @@
-# Research Sync Agent
+# Research Agent
 
 An AI-powered research assistant that helps automate the process of conducting research, analyzing sources, and generating comprehensive summaries. The agent uses advanced language models to process and synthesize information from multiple sources.
 
