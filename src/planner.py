@@ -9,11 +9,20 @@ class ResearchPlanner:
     def create_plan(self, research_topic):
         """
         Create a research plan.
+        Args:
+            research_topic: A dictionary containing 'topic' and 'guidelines' fields
         Returns JSON-formatted plan with search queries and strategy.
         """
+        # Extract topic and guidelines
+        topic = research_topic['topic']
+        guidelines = research_topic['guidelines']
+        
         prompt = f"""
         Create a research plan for the following topic:
-        {research_topic}
+        {topic}
+        
+        Research Guidelines:
+        {json.dumps(guidelines, indent=2)}
         
         Please provide:
         1. A list of specific search queries to find relevant information
@@ -31,11 +40,12 @@ class ResearchPlanner:
         
         Keep queries focused and specific to get the most relevant results. 
         Search queries should be short and concise, no more than 10 words.
+        Make sure the plan aligns with the provided research guidelines.
         
         Simply return the JSON object. Do not include any other text or comments, or put anything in quotes.
         """
         
-        system_prompt = "You are a research planning assistant focused on creating effective search strategies."
+        system_prompt = "You are a research planning assistant focused on creating effective search strategies that align with specific research guidelines."
         
         response = self.llm_manager.create_chat_completion(
             system_prompt=system_prompt,

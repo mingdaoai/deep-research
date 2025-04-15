@@ -8,12 +8,16 @@ from io import BytesIO
 from datetime import datetime, timedelta
 import time
 import sys
+import logging
 from .browser_manager import BrowserManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from dataclasses import dataclass
 from typing import Optional, List
+
+# Create logger instance
+logger = logging.getLogger(__name__)
 
 @dataclass
 class DownloadLink:
@@ -161,7 +165,7 @@ class ContentDownloader:
                     continue
                 seen_urls.add(url)
                 
-                print(f"Attempting to download content from {url}")
+                logger.info(f"Attempting to download content from {url}")
                 content = self._get_cached_content(url)
                 if not content:
                     content = self._fetch_and_process_url(url)
@@ -192,10 +196,10 @@ class ContentDownloader:
                         'success': True
                     })
                     successful_downloads += 1
-                    print(f"Successfully downloaded content from {url}")
-                    print(f"Extracted {len(new_links)} new URLs from content")
+                    logger.info(f"Successfully downloaded content from {url}")
+                    logger.info(f"Extracted {len(new_links)} new URLs from content")
             except Exception as e:
-                print(f"Error downloading {url}: {str(e)}")
+                logger.error(f"Error downloading {url}: {str(e)}")
                 downloaded_content['results'].append({
                     'url': url,
                     'error': str(e),
@@ -205,9 +209,9 @@ class ContentDownloader:
                 })
         
         if (successful_downloads == 0) and (len(url_to_links) > 0):
-            print("No successful downloads. URLs attempted:")
+            logger.warning("No successful downloads. URLs attempted:")
             for link in url_to_links.values():
-                print(link.url)
+                logger.warning(link.url)
             raise Exception("No successful downloads")
             
         return downloaded_content, extracted_links
@@ -331,27 +335,27 @@ Respond in JSON format, not any text or markdown. Don't put in any quotes or oth
         """
         try:
             # Try a direct GET request first
-            print(f"\nMaking GET request to {url}")
+            logger.info(f"\nMaking GET request to {url}")
             response = requests.get(url, timeout=30)
-            print(f"GET request results:")
-            print(f"Status code: {response.status_code}")
-            print(f"Content-Type: {response.headers.get('Content-Type', '')}")
-            print(f"Content length: {len(response.content)} bytes")
-            print(f"Final URL: {response.url}")
-            print(f"All headers: {dict(response.headers)}\n")
+            logger.info(f"GET request results:")
+            logger.info(f"Status code: {response.status_code}")
+            logger.info(f"Content-Type: {response.headers.get('Content-Type', '')}")
+            logger.info(f"Content length: {len(response.content)} bytes")
+            logger.info(f"Final URL: {response.url}")
+            logger.info(f"All headers: {dict(response.headers)}\n")
             
             # Try to detect if it's a PDF by examining the content
             content_start = response.content[:5]
             is_pdf = content_start.startswith(b'%PDF-')
             
             if is_pdf or 'application/pdf' in response.headers.get('Content-Type', '').lower():
-                print("Detected as PDF document, processing content...")
+                logger.info("Detected as PDF document, processing content...")
                 
                 # Save PDF to a temporary file
                 temp_pdf_path = os.path.join(self.cache_dir, 'temp.pdf')
                 with open(temp_pdf_path, 'wb') as f:
                     f.write(response.content)
-                print(f"Saved PDF to {temp_pdf_path}")
+                logger.info(f"Saved PDF to {temp_pdf_path}")
                 
                 # Get filename from Content-Disposition header if available
                 content_disp = response.headers.get('Content-Disposition', '')
@@ -360,22 +364,20 @@ Respond in JSON format, not any text or markdown. Don't put in any quotes or oth
                 else:
                     title = urlparse(url).path.split('/')[-1]
                 
-
-                
                 try:
                     # Try to process the saved PDF using pdfplumber
                     text = ''
                     with pdfplumber.open(temp_pdf_path) as pdf:
                         for page in pdf.pages:
                             text += page.extract_text() + '\n'
-                    print(f"Successfully extracted {len(text)} characters from PDF")
+                    logger.info(f"Successfully extracted {len(text)} characters from PDF")
                     
                     return {
                         'title': title,
                         'text': text
                     }
                 except Exception as e:
-                    print(f"Error processing PDF: {str(e)}")
+                    logger.error(f"Error processing PDF: {str(e)}")
                     # If PDF processing fails, try to use browser as fallback
                     raise
                 finally:
@@ -424,7 +426,7 @@ Respond in JSON format, not any text or markdown. Don't put in any quotes or oth
             }
                 
         except Exception as e:
-            print(f"Error processing {url}: {str(e)}")
+            logger.error(f"Error processing {url}: {str(e)}")
             raise
 
     def _get_cached_content(self, url):
@@ -453,6 +455,12 @@ def main():
     """
     import argparse
     
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Download and process content from a URL')
     parser.add_argument('--url', type=str, required=True,
@@ -474,16 +482,16 @@ def main():
         
         # Download and process the content
         result = downloader.download_content([download_link])
-        print("\nDownload Result:")
+        logger.info("\nDownload Result:")
         if result['results']:
             first_result = result['results'][0]
-            print(f"Title: {first_result.get('title', 'No title')}")
-            print(f"Parent Snippet: {first_result.get('parent_snippet', 'No parent snippet')}")
-            print(f"Snippet: {first_result.get('snippet', 'No snippet')}")
-            print(f"\nFirst 500 characters of text:")
-            print(first_result.get('text', 'No text')[:500])
+            logger.info(f"Title: {first_result.get('title', 'No title')}")
+            logger.info(f"Parent Snippet: {first_result.get('parent_snippet', 'No parent snippet')}")
+            logger.info(f"Snippet: {first_result.get('snippet', 'No snippet')}")
+            logger.info(f"\nFirst 500 characters of text:")
+            logger.info(first_result.get('text', 'No text')[:500])
     except Exception as e:
-        print(f"Error processing URL: {str(e)}")
+        logger.error(f"Error processing URL: {str(e)}")
         
 if __name__ == '__main__':
     main()

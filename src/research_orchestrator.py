@@ -28,10 +28,48 @@ class ResearchOrchestrator:
         self.indexer = ContentIndexer(working_dir)
         
     def _read_research_topic(self):
-        """Read research topic from research.md"""
+        """Read research topic from research.md and parse it into topic and guidelines using LLM"""
         try:
             with open(os.path.join(self.working_dir, 'research.md'), 'r') as f:
-                return f.read()
+                content = f.read()
+                
+            # Use LLM to parse the content into topic and guidelines
+            prompt = f"""
+            Parse the following research content into a JSON object with two fields:
+            1. topic: The main research topic
+            2. guidelines: A list of research guidelines or requirements
+            
+            Content:
+            {content}
+            
+            Format the response as a JSON object with these fields:
+            {{
+                "topic": "the main research topic",
+                "guidelines": ["guideline1", "guideline2", ...]
+            }}
+            
+            Simply return the JSON object. Do not include any other text or comments.
+            """
+            
+            system_prompt = "You are a research content parser that extracts the main topic and guidelines from research content."
+            
+            response = self.planner.llm_manager.create_chat_completion(
+                system_prompt=system_prompt,
+                user_prompt=prompt,
+                max_tokens=1000
+            )
+            
+            # Parse and validate the response
+            try:
+                parsed = json.loads(response)
+                assert 'topic' in parsed, "Response must include a topic"
+                assert 'guidelines' in parsed, "Response must include guidelines"
+                assert isinstance(parsed['guidelines'], list), "Guidelines must be a list"
+                return parsed
+            except json.JSONDecodeError:
+                print("Failed to parse LLM response as JSON:", response)
+                raise
+                
         except FileNotFoundError:
             raise ValueError("research.md not found in working directory")
         except Exception as e:
@@ -84,7 +122,7 @@ class ResearchOrchestrator:
             # Generate initial research plan
             logging.info("Generating research plan...")
             plan = self.planner.create_plan(research_topic)
-            save_json_file(plan, os.path.join(self.working_dir, 'plan'), 'search_plan', iteration)
+            save_json_file(json.loads(plan), os.path.join(self.working_dir, 'plan'), 'search_plan', iteration)
             
             # Accumulate all search results
             all_search_results = []
@@ -132,7 +170,7 @@ class ResearchOrchestrator:
             
             # Generate final document
             logging.info("Generating final summary...")
-            self.summarizer.summarize()
+            self.summarizer.summarize(research_topic)
                 
         except Exception as e:
             logging.error(f"Error in research process: {str(e)}", exc_info=True)

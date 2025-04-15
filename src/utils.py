@@ -10,7 +10,7 @@ def validate_working_dir(working_dir):
         
     research_path = os.path.join(working_dir, 'research.md')
     if not os.path.exists(research_path):
-        raise ValueError(f"research.md not found in {args.working_dir}")
+        raise ValueError(f"research.md not found in {working_dir}")
     
     # Create all required subdirectories
     for subdir in REQUIRED_SUBDIRS:

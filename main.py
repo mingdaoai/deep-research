@@ -10,7 +10,7 @@ def setup_logging():
     """Configure logging for the application."""
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
+        format='%(asctime)s - %(levelname)s - %(pathname)s:%(lineno)d - %(message)s',
         handlers=[
             logging.StreamHandler(sys.stdout),
             logging.FileHandler('research_agent.log')
@@ -41,7 +41,7 @@ def main():
         logging.info("Research process completed successfully")
         
     except Exception as e:
-        logging.error(f"Error during research process: {str(e)}", exc_info=args.debug)
+        logging.error(f"Error during research process: {str(e)}", exc_info=True)
         sys.exit(1)
 
 if __name__ == "__main__":

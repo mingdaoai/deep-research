@@ -1,16 +1,17 @@
+import logging
+import sys
+import os
+import tkinter as tk
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import WebDriverException
 import undetected_chromedriver as uc
-import logging
-import sys
-import os
-import tkinter as tk
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
 
 class BrowserManager:
     _instance = None
